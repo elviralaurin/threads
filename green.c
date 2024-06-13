@@ -147,6 +147,7 @@ void green_thread() {
 }
 
 int green_yield() {
+        // prevent timer interrupt
         sigprocmask(SIG_BLOCK, &block, NULL);
 
         green_t *susp = running;
@@ -160,12 +161,16 @@ int green_yield() {
         swapcontext(susp->context, next->context);      // the current state is saved in susp->context
         // when susp resumes execution, it will start from here!!!
 
+        // reallow timer interrrupt
         sigprocmask(SIG_UNBLOCK, &block, NULL);
 }
 
 int green_join(green_t *thread, void** res) {
         // suspend the current thread and wait until the input thread terminates
         // NOTE: we only allow ONE waiting thread
+
+        // prevent timer interrupt
+        sigprocmask(SIG_BLOCK, &block, NULL);
 
         if (!thread->zombie) {
                 // it's alive!
@@ -184,8 +189,11 @@ int green_join(green_t *thread, void** res) {
         res = thread->retval;
         // free context
         free(thread->context);
-        // we are now dead
+        // braaiiiiiins.......
         thread->zombie = TRUE;
+
+        // reallow timer interrupts
+        sigprocmask(SIG_UNBLOCK, &block, NULL);
 
         return 0;
 }
@@ -197,6 +205,9 @@ void green_cond_init(green_cond_t *cond) {
 
 // suspend the current thread on the condition
 void green_cond_wait(green_cond_t *cond) {
+        // prevent timer interrupt
+        sigprocmask(SIG_BLOCK, &block, NULL);
+
         green_t *susp = running;
 
         if (cond->first == NULL) {
@@ -215,6 +226,9 @@ void green_cond_wait(green_cond_t *cond) {
         green_t *next = dequeue();
         running = next;
         swapcontext(susp->context, next->context);
+
+        // reallow timer interrupt
+        sigprocmask(SIG_UNBLOCK, &block, NULL);
 }
 
 // move the first suspended thread to the ready queue
