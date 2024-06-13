@@ -83,8 +83,9 @@ int main() {
         green_cond_init(&cond);
         green_mutex_init(&mut);
 
-        green_create(&g0, test_cond, &a0);
-        green_create(&g1, test_cond, &a1);
+        printf("test_timer_mutex\n");
+        green_create(&g0, test_mutex, &a0);
+        green_create(&g1, test_mutex, &a1);
 
         green_join(&g0, NULL);
         green_join(&g1, NULL);
